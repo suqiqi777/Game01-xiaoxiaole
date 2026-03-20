@@ -116,20 +116,35 @@ class Game:
         while True:
             self.draw()
             for event in pygame.event.get():
-                if event.type == pygame.QUIT: return
+                if event.type == pygame.QUIT:
+                    return
+                
+                # ✨ 核心改进：同时监听 鼠标点击 和 手指触摸
+                click_detected = False
+                mx, my = 0, 0
+
                 if event.type == pygame.MOUSEBUTTONDOWN:
+                    mx, my = pygame.mouse.get_pos()
+                    # 补偿浏览器缩放
+                    mx = mx * WIDTH // self.screen.get_width()
+                    my = my * HEIGHT // self.screen.get_height()
+                    click_detected = True
+                
+                elif event.type == pygame.FINGERDOWN:
+                    # 触摸屏使用 0.0-1.0 的比例坐标
+                    mx = int(event.x * WIDTH)
+                    my = int(event.y * HEIGHT)
+                    click_detected = True
+
+                if click_detected:
                     if self.game_over:
                         self.reset_game()
                     elif not self.counting_down:
-                        # ✨ 关键：自动适配手机点击坐标
-                        mx, my = pygame.mouse.get_pos()
-                        mx = mx * WIDTH // self.screen.get_width()
-                        my = my * HEIGHT // self.screen.get_height()
-                        
                         off_x, off_y = (WIDTH - 500) // 2, 120
                         c, r = (mx - off_x) // CELL_SIZE, (my - off_y) // CELL_SIZE
                         if 0 <= r < 5 and 0 <= c < 5:
-                            if self.selected is None: self.selected = (r, c)
+                            if self.selected is None:
+                                self.selected = (r, c)
                             else:
                                 r1, c1 = self.selected
                                 if abs(r1-r) + abs(c1-c) == 1:
@@ -144,6 +159,7 @@ class Game:
                                     else:
                                         self.board[r1][c1], self.board[r][c] = self.board[r][c], self.board[r1][c1]
                                 self.selected = None
+            
             self.clock.tick(FPS)
             await asyncio.sleep(0)
 
